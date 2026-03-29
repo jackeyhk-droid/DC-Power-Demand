@@ -60,7 +60,7 @@ tbody tr:hover{background:rgba(255,255,255,0.04);transition:background 0.15s}
 .tag-orange{background:rgba(255,152,0,0.15);color:var(--orange)}
 .tag-ms{background:rgba(102,187,106,0.15);color:var(--ms)}
 .tag-accent{background:rgba(79,140,255,0.15);color:var(--accent)}
-.kpi-row{display:flex;gap:12px;margin:10px 0}
+.kpi-row{display:flex;gap:12px;margin:10px 0;flex-wrap:wrap}
 .kpi{flex:1;text-align:center;background:rgba(79,140,255,0.08);border-radius:8px;padding:10px}
 .kpi .label{font-size:11px;color:var(--dim)}
 .kpi .val{font-size:22px;font-weight:800;color:var(--accent)}
@@ -218,7 +218,7 @@ tbody tr:hover{background:rgba(255,255,255,0.04);transition:background 0.15s}
     <div class="lock-icon">&#128274;</div>
     <div class="lock-title-color">AI Data Centre Power</div>
     <div class="lock-sub">Enter password to access.</div>
-    <input type="password" id="lock-pw" class="lock-input" placeholder="" autocomplete="off">
+    <input type="password" id="lock-pw" class="lock-input" placeholder="Enter access code" autocomplete="off">
     <button class="lock-btn" onclick="checkPw()">Unlock Dashboard</button>
     <div class="lock-hint" id="lock-msg"></div>
   </div>
@@ -710,7 +710,7 @@ function initSupplyCharts(){
     datasets:[{
       label:'GW',
       data:[74,10,15,49,18,7,10,13,40,9],
-      backgroundColor:['#4f8cff','#3a4a5c','#3a4a5c','#5b8cb8','#6a9fd4','#6a9fd4','#8bb8d9','#6a9fd4','#4f8cff','#ef5350'],
+      backgroundColor:['#4f8cff','#3a4a5c','#4a5c70','#5b8cb8','#6a9fd4','#6a9fd4','#8bb8d9','#6a9fd4','#4f8cff','#ef5350'],
       borderRadius:4,
       borderSkipped:false
     }]
