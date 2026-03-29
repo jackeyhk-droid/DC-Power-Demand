@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Data Centre Power Demand — Three-House Cross Research</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#08090d;--card:#0f1117;--border:#1a1d2a;--accent:#4f8cff;--gs:#f5a623;--gsL:#ffd078;--gsF:#d35400;--jpm:#4fc3f7;--ms:#66bb6a;--msL:#a5d6a7;--green:#4caf50;--red:#ef5350;--orange:#ff9800;--purple:#ab47bc;--text:#e4e6ed;--muted:#94a0b8;--dim:#9ca3af}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;padding:20px 28px;min-height:100vh}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.header h1{font-size:26px;font-weight:800;letter-spacing:-0.03em}
+.header .sub{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px}
+.badges{display:flex;gap:8px}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:4px 12px;border-radius:12px;letter-spacing:0.02em}
+.badge-gs{background:#f5a62322;color:var(--gs);border:1px solid #f5a62344}
+.badge-jpm{background:#4fc3f722;color:var(--jpm);border:1px solid #4fc3f744}
+.badge-ms{background:#66bb6a22;color:var(--ms);border:1px solid #66bb6a44}
+.date-line{font-size:13px;color:var(--dim);margin-bottom:18px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:20px;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:9px 20px;border-radius:8px;border:none;font-size:14px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;transition:all 0.15s}
+.tab:hover{color:var(--text)}
+.tab.active{background:transparent;color:#fff;border-bottom:2px solid var(--accent);border-radius:8px 8px 0 0}
+.tab-content{display:none}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.tab-content.active{display:block;animation:fadeIn 0.3s ease-out forwards}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:14px;transition:transform 0.2s,box-shadow 0.2s}
+.card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.25)}
+.card h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.card .sub{font-size:13px;color:var(--dim);margin-bottom:12px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.grid-32{display:grid;grid-template-columns:3fr 2fr;gap:14px}
+.full{grid-column:1/-1}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{padding:8px;font-weight:700;color:var(--muted);text-align:center;border-bottom:2px solid var(--border);position:sticky;top:0;background:var(--card);z-index:10}
+th:first-child{text-align:left}
+td{padding:7px 8px;border-bottom:1px solid var(--border);text-align:center}
+td:first-child{text-align:left;font-weight:600;color:var(--text)}
+td.r{text-align:right;padding-right:16px;font-variant-numeric:tabular-nums}
+th.r{text-align:right;padding-right:16px}
+tr:nth-child(even){background:rgba(26,29,42,0.12)}
+tbody tr:hover{background:rgba(255,255,255,0.04);transition:background 0.15s}
+.chart-wrap{position:relative;height:300px;margin-bottom:8px}
+.chart-wrap-sm{position:relative;height:260px;margin-bottom:8px}
+.narrative{font-size:13px;color:var(--muted);line-height:1.75;margin-top:10px}
+.callout{border-radius:8px;padding:14px;margin-top:12px}
+.callout-green{background:rgba(76,175,80,0.08);border:1px solid rgba(76,175,80,0.18)}
+.callout-red{background:rgba(239,83,80,0.08);border:1px solid rgba(239,83,80,0.18)}
+.callout-orange{background:rgba(255,152,0,0.08);border:1px solid rgba(255,152,0,0.18)}
+.callout-accent{background:rgba(79,140,255,0.08);border:1px solid rgba(79,140,255,0.18)}
+.callout-ms{background:rgba(102,187,106,0.08);border:1px solid rgba(102,187,106,0.18)}
+.callout h4{font-size:14px;font-weight:700;margin-bottom:6px}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 10px;border-radius:4px}
+.tag-green{background:rgba(76,175,80,0.15);color:var(--green)}
+.tag-red{background:rgba(239,83,80,0.15);color:var(--red)}
+.tag-orange{background:rgba(255,152,0,0.15);color:var(--orange)}
+.tag-ms{background:rgba(102,187,106,0.15);color:var(--ms)}
+.tag-accent{background:rgba(79,140,255,0.15);color:var(--accent)}
+.kpi-row{display:flex;gap:12px;margin:10px 0}
+.kpi{flex:1;text-align:center;background:rgba(79,140,255,0.08);border-radius:8px;padding:10px}
+.kpi .label{font-size:11px;color:var(--dim)}
+.kpi .val{font-size:22px;font-weight:800;color:var(--accent)}
+.timeline-wrap{position:relative;padding-left:24px}
+.timeline-wrap::before{content:'';position:absolute;left:8px;top:14px;bottom:14px;width:2px;background:linear-gradient(to bottom,var(--gs),var(--gsL),var(--gsF),var(--jpm),var(--ms));border-radius:1px}
+.timeline-item{padding:12px 0;border-bottom:none;position:relative}
+.timeline-item::before{content:'';position:absolute;left:-20px;top:16px;width:10px;height:10px;border-radius:50%;border:2px solid;background:var(--card);z-index:1}
+.tl-gs::before{border-color:var(--gs)}.tl-gsL::before{border-color:var(--gsL)}.tl-gsF::before{border-color:var(--gsF)}.tl-jpm::before{border-color:var(--jpm)}.tl-ms::before{border-color:var(--ms)}
+.timeline-item:not(:last-child)::after{content:'';position:absolute;left:-16px;top:28px;bottom:-12px;width:0;border-left:1px dashed var(--border)}
+.timeline-head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.timeline-head .date{font-size:13px;font-weight:700}
+.timeline-head .growth{font-size:15px;font-weight:800;color:var(--text)}
+.timeline-head .twh{font-size:12px;color:var(--dim)}
+.timeline-body{font-size:12px;color:var(--muted);line-height:1.65}
+.house-card{border-left:4px solid;padding-left:14px}
+.house-card .bank{font-size:14px;font-weight:700}
+.house-card .role{font-size:20px;font-weight:800;color:var(--text);margin:6px 0}
+.house-card .items{font-size:13px;color:var(--muted);line-height:1.6}
+.bottleneck{padding:12px 0;border-bottom:1px solid var(--border)}
+.bottleneck:last-child{border-bottom:none}
+.bottleneck .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.bottleneck .head h4{font-size:15px;font-weight:700}
+.bottleneck .body{font-size:13px;color:var(--muted);line-height:1.75}
+.bottleneck .src{font-size:11px;color:var(--dim);margin-top:4px}
+.sixp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.sixp-card{border-radius:8px;padding:14px}
+.sixp-card .head{display:flex;justify-content:space-between;margin-bottom:8px}
+.sixp-card .head h4{font-size:14px;font-weight:700}
+.sixp-card .gs-text{font-size:12px;color:var(--gs);line-height:1.6;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.sixp-card .ms-text{font-size:12px;color:var(--ms);line-height:1.6}
+.gen-timeline{padding:12px 0;border-bottom:1px solid var(--border)}
+.gen-timeline:last-child{border-bottom:none}
+.gen-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.gen-head .dot{width:16px;height:16px;border-radius:4px;flex-shrink:0}
+.gen-head .name{font-size:15px;font-weight:700}
+.gen-head .online{font-size:17px;font-weight:800;color:var(--text)}
+.gen-constraint{font-size:12px;color:var(--orange);font-weight:600;margin-bottom:4px}
+.gen-detail{font-size:13px;color:var(--muted);line-height:1.65}
+.ess-usecase{padding:10px 0;border-bottom:1px solid var(--border)}
+.ess-usecase:last-child{border-bottom:none}
+.ess-usecase h4{font-size:14px;font-weight:700;margin-bottom:3px}
+.ess-usecase p{font-size:13px;color:var(--muted);line-height:1.65}
+.tier{padding:12px 0;border-bottom:1px solid var(--border)}
+.tier:last-child{border-bottom:none}
+.tier h4{font-size:14px;font-weight:700;margin-bottom:2px}
+.tier .names{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+.tier .body{font-size:13px;color:var(--muted);line-height:1.65}
+.rotation-bar{display:flex;align-items:flex-end;gap:10px;height:220px;padding:0 12px;margin-bottom:10px}
+.rot-col{flex:1;display:flex;flex-direction:column;align-items:center}
+.rot-col .period{font-size:11px;color:var(--muted);margin-bottom:5px}
+.rot-col .bar{width:100%;border-radius:5px 5px 0 0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff}
+.rot-col .label{font-size:11px;color:var(--text);margin-top:6px;text-align:center;font-weight:600}
+.key-msg{display:flex;gap:14px;padding:16px;margin-bottom:10px;border-radius:10px;border-left:4px solid;align-items:flex-start;transition:transform 0.15s}
+.key-msg:hover{transform:translateX(4px)}
+.key-msg:last-child{margin-bottom:0}
+.key-msg .num{font-size:24px;font-weight:800;min-width:34px;line-height:1}
+.key-msg .tag-house{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px;vertical-align:middle}
+.key-msg .title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;line-height:1.4}
+.key-msg .body{font-size:13px;color:var(--muted);line-height:1.7}
+.km-1{border-left-color:#4fc3f7;background:linear-gradient(135deg,rgba(79,195,247,0.06),transparent 60%)}
+.km-1 .num{color:#4fc3f7;text-shadow:0 0 15px rgba(79,195,247,0.4)}
+.km-2{border-left-color:#ef5350;background:linear-gradient(135deg,rgba(239,83,80,0.06),transparent 60%)}
+.km-2 .num{color:#ef5350;text-shadow:0 0 15px rgba(239,83,80,0.4)}
+.km-3{border-left-color:#66bb6a;background:linear-gradient(135deg,rgba(102,187,106,0.06),transparent 60%)}
+.km-3 .num{color:#66bb6a;text-shadow:0 0 15px rgba(102,187,106,0.4)}
+.km-4{border-left-color:#ff9800;background:linear-gradient(135deg,rgba(255,152,0,0.06),transparent 60%)}
+.km-4 .num{color:#ff9800;text-shadow:0 0 15px rgba(255,152,0,0.4)}
+.km-5{border-left-color:#f5a623;background:linear-gradient(135deg,rgba(245,166,35,0.06),transparent 60%)}
+.km-5 .num{color:#f5a623;text-shadow:0 0 15px rgba(245,166,35,0.4)}
+.km-6{border-left-color:#ab47bc;background:linear-gradient(135deg,rgba(171,71,188,0.06),transparent 60%)}
+.km-6 .num{color:#ab47bc;text-shadow:0 0 15px rgba(171,71,188,0.4)}
+.footer{text-align:center;font-size:11px;color:var(--dim);margin-top:16px;padding-bottom:10px}
+.compare-split{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+.compare-col{border-radius:8px;padding:14px}
+.compare-col h4{font-size:14px;font-weight:700;margin-bottom:8px}
+.compare-col .item{font-size:13px;color:var(--muted);padding:4px 0;border-bottom:1px solid var(--border)}
+.compare-col .item:last-child{border-bottom:none}
+.table-responsive{overflow-x:auto;-webkit-overflow-scrolling:touch}
+@media(max-width:900px){.grid-2,.grid-3,.grid-32,.sixp-grid{grid-template-columns:1fr}.full{grid-column:auto}}
+
+@media print {
+  body{background:#fff!important;color:#1a1a1a!important;padding:12px}
+  .card{background:#fff!important;border:1px solid #ddd!important;break-inside:avoid;box-shadow:none!important}
+  .tab-content{display:block!important;page-break-before:always}
+  .tab-content:first-of-type{page-break-before:auto}
+  .tabs,.badge,.header .badges{display:none!important}
+  *{color:#1a1a1a!important;text-shadow:none!important}
+  h1,h3,.title,.bank,.role{color:#000!important}
+  .key-msg{border-left-color:#666!important;background:none!important}
+  .key-msg .num{color:#333!important}
+  .callout,.callout-red,.callout-green,.callout-orange,.callout-accent,.callout-ms{background:#f5f5f5!important;border-color:#ccc!important}
+  .tag{background:#eee!important;color:#333!important}
+  table{font-size:11px}
+  th{border-bottom:2px solid #333!important}
+  td{border-bottom:1px solid #ddd!important}
+  tr:nth-child(even){background:#f9f9f9!important}
+  .narrative{color:#444!important}
+  .sub,.src,.footer{color:#666!important}
+  .chart-wrap,.chart-wrap-sm,canvas{display:none!important}
+  .header::after{content:'AI / Data Centre Power Demand — Three-House Cross Research — Print Version';display:block;font-size:10px;color:#999;margin-top:4px}
+  .house-card{border-left-width:3px!important}
+  .sixp-card{background:#f9f9f9!important;border-color:#ddd!important}
+  .sixp-card .gs-text,.sixp-card .ms-text{color:#333!important}
+  .gen-timeline,.bottleneck,.ess-usecase,.tier,.timeline-item{break-inside:avoid}
+  .grid-2,.grid-3,.grid-32,.sixp-grid{gap:8px}
+  .rotation-bar .bar{color:#000!important;border:1px solid #999!important}
+}
+
+/* ── Password Lock Screen ── */
+#lock-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column}
+#lock-screen.unlocked{animation:lockFade 0.6s ease-out forwards;pointer-events:none}
+@keyframes lockFade{to{opacity:0;transform:scale(1.02)}}
+.lock-box{text-align:center;max-width:420px;padding:40px;background:var(--card);border:1px solid rgba(102,187,106,0.2);border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,0.4),0 0 60px rgba(79,140,255,0.05)}
+.lock-icon{font-size:48px;margin-bottom:16px;opacity:0.7}
+.lock-title{font-size:22px;font-weight:800;letter-spacing:-0.02em;margin-bottom:6px}
+.lock-sub{font-size:13px;color:var(--muted);margin-bottom:28px;line-height:1.6}
+.lock-input{width:100%;padding:14px 18px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:15px;font-family:'DM Sans',sans-serif;text-align:center;letter-spacing:4px;outline:none;transition:border-color 0.2s}
+.lock-input:focus{border-color:var(--accent);box-shadow:0 0 20px rgba(79,140,255,0.15)}
+.lock-input.error{border-color:var(--red);animation:lockShake 0.4s ease}
+@keyframes lockShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.lock-btn{width:100%;padding:14px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--gs),var(--ms),var(--jpm));background-size:200% 200%;animation:gradientShift 4s ease infinite;color:#fff;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:14px;transition:all 0.2s}
+.lock-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(102,187,106,0.3)}
+.lock-dots{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
+.lock-dots span{width:12px;height:12px;border-radius:50%}
+.lock-title-color{background:linear-gradient(135deg,var(--gs),var(--jpm),var(--ms));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-size:24px;font-weight:800;letter-spacing:-0.02em;margin-bottom:8px}
+.lock-hint{font-size:11px;color:var(--dim);margin-top:16px}
+.lock-brand{font-size:11px;color:var(--dim);margin-top:24px;letter-spacing:0.05em}
+#main-content{display:none}
+#main-content.visible{display:block;animation:fadeIn 0.5s ease-out}
+
+/* ── Dynamic Title Gradient ── */
+@keyframes gradientShift{
+  0%{background-position:0% 50%}
+  25%{background-position:50% 50%}
+  50%{background-position:100% 50%}
+  75%{background-position:50% 50%}
+  100%{background-position:0% 50%}
+}
+.dynamic-title{
+  background:linear-gradient(135deg,var(--accent),var(--gs),var(--jpm),var(--ms),var(--accent));
+  background-size:400% 400%;
+  animation:gradientShift 8s ease infinite;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+</style>
+</head>
+<body>
+
+<!-- Password Lock Screen -->
+<div id="lock-screen">
+  <div class="lock-box">
+    <div class="lock-dots"><span style="background:var(--gs)"></span><span style="background:var(--jpm)"></span><span style="background:var(--ms)"></span></div>
+    <div class="lock-icon">&#128274;</div>
+    <div class="lock-title-color">AI Data Centre Power</div>
+    <div class="lock-sub">Enter password to access.</div>
+    <input type="password" id="lock-pw" class="lock-input" placeholder="" autocomplete="off">
+    <button class="lock-btn" onclick="checkPw()">Unlock Dashboard</button>
+    <div class="lock-hint" id="lock-msg"></div>
+  </div>
+</div>
+
+<!-- Main Content (hidden until authenticated) -->
+<div id="main-content">
+
+<div class="header">
+  <div>
+    <div class="sub">Three-House Cross Research</div>
+    <h1 class="dynamic-title">AI / Data Centre Power Demand</h1>
+  </div>
+  <div class="badges">
+    <span class="badge badge-gs">GS SUSTAIN</span>
+    <span class="badge badge-jpm">JPM AM</span>
+    <span class="badge badge-ms">MS Research</span>
+  </div>
+</div>
+<div class="date-line">GS: Apr'24 / Oct'25 / Feb'26 &middot; JPM: Guide to Alternatives 1Q26 &middot; MS: "Flexible Power" Mar'26 &middot; Updated: March 23, 2026</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('overview')">Overview</button>
+  <button class="tab" onclick="showTab('demand')">Demand</button>
+  <button class="tab" onclick="showTab('supply')">Supply &amp; Gaps</button>
+  <button class="tab" onclick="showTab('ess')">ESS / Flexibility</button>
+</div>
+
+<!-- ═══════════════════════ OVERVIEW ═══════════════════════ -->
+<div id="tab-overview" class="tab-content active">
+
+  <!-- KEY MESSAGES -->
+  <div class="card">
+    <h3>Key Takeaways</h3>
+    <div class="sub">Six messages for the Investment Committee from 7 reports across three houses</div>
+
+    <div class="key-msg km-1"><div class="num">1</div><div><div class="title">Demand has converged — this is no longer a debate<span class="tag-house" style="background:rgba(79,195,247,0.15);color:#4fc3f7">GS + JPM + MS</span></div><div class="body">GS +220%, JPM +228%, MS 320 GW build-out. Three independent research teams arrive at near-identical conclusions: global data centre power demand will more than triple by 2030. This is equivalent to adding a new country the size of Japan to global electricity consumption. US power demand CAGR of 3.2-3.8% is the highest since the 1990s.</div></div></div>
+
+    <div class="key-msg km-2"><div class="num">2</div><div><div class="title">Supply constraint is real but unevenly distributed<span class="tag-house" style="background:rgba(239,83,80,0.15);color:#ef5350">CRITICAL</span></div><div class="body">Raw generation capacity (Bottleneck 1) is solvable with capital — JPM shows 222 GW of US additions planned. The true binding constraint is grid interconnection &amp; T&amp;D labour (Bottleneck 2) — GS quantifies a 78,000 skilled worker gap requiring 3-4 years of training. Transformer lead times have stretched to 128-144 weeks at 4-6x cost. This is a human capital problem that money alone cannot accelerate.</div></div></div>
+
+    <div class="key-msg km-3"><div class="num">3</div><div><div class="title">Inference load flexibility changes everything<span class="tag-house" style="background:rgba(102,187,106,0.15);color:#66bb6a">MS NEW</span></div><div class="body">As AI inference rises to 45-50% of DC workload, power demand shifts from stable/predictable (training) to volatile/spiky (inference). The system challenge shifts from "can we supply enough power" to "can we supply power flexibly enough." This creates a new investment category: energy storage systems (ESS) for millisecond-response peak shaving and frequency regulation.</div></div></div>
+
+    <div class="key-msg km-4"><div class="num">4</div><div><div class="title">Sector rotation follows a clear sequence — ESS is next<span class="tag-house" style="background:rgba(255,152,0,0.15);color:#ff9800">MS ROTATION</span></div><div class="body">MS maps the AI power investment rotation: Nuclear (2023-24, +4.8x) → Gas Generators (2024-25, +3.2x) → Backup Generators (2025, +2.1x) → Fuel Cells (2025-26, +4.5x) → ESS (next). Each wave lasted 6-12 months. The $1.5T+ AI power basket has followed this sequence with remarkable consistency. Understanding where you are in this rotation is more important than the demand headline number.</div></div></div>
+
+    <div class="key-msg"><div class="num">5</div><div><div class="title">GS warns we are still in the "Appraisal" phase — but transition signals are building</div><div class="body">Using their AI Innovation Cycle framework (Shale Oil analogy), GS places AI infrastructure in the Appraisal/Hopes &amp; Dreams phase — the best window for infrastructure equities. But reinvestment rates at 87% and CROCI declining from 31% toward the 24% historical low are early warning signals. Three transition triggers to monitor: financial inflexibility (not triggered), return erosion (deteriorating), product oversupply (not triggered).</div></div></div>
+
+    <div class="key-msg km-6"><div class="num">6</div><div><div class="title">Three houses, three dimensions, one complete framework<span class="tag-house" style="background:rgba(171,71,188,0.15);color:#ab47bc">SYNTHESIS</span></div><div class="body">Goldman Sachs tells you WHERE in the cycle (6P constraints, Innovation Cycle phase, BTM framework). J.P. Morgan tells you HOW BIG the gap is (222 GW supply, &gt;2,600 GW queue, 9-18 GW shortfall). Morgan Stanley tells you WHERE money goes next (inference flexibility, ESS rotation, Na-ion cost curve). These three dimensions — time positioning, gap quantification, rotation direction — are the complete decision framework.</div></div></div>
+  </div>
+
+  <!-- THREE HOUSE CARDS -->
+  <div class="grid-3">
+    <div class="card house-card" style="border-left-color:var(--gs)">
+      <div class="bank" style="color:var(--gs)">Goldman Sachs</div>
+      <div class="role">WHERE in the cycle</div>
+      <div class="items">6P constraint framework &middot; AI Innovation Cycle / Shale analogy &middot; BTM 14 GW &middot; Vera Rubin server data &middot; CO₂ social cost $145-170B &middot; AI drug discovery value $83-412B &middot; Green Reliability Premium &middot; 87% reinvestment rate &middot; 32→82 Buy-rated stocks</div>
+    </div>
+    <div class="card house-card" style="border-left-color:var(--jpm)">
+      <div class="bank" style="color:var(--jpm)">J.P. Morgan</div>
+      <div class="role">HOW BIG the gap</div>
+      <div class="items">82→219 GW global DC capacity &middot; US DC: 168→620 TWh &middot; 222 GW US supply additions &middot; 34 GW retirements &middot; Capacity-factor adjusted generation &middot; &gt;2,600 GW interconnection queue &middot; $664B+ hyperscaler capex &middot; AI = 65% of DC by 2030</div>
+    </div>
+    <div class="card house-card" style="border-left-color:var(--ms)">
+      <div class="bank" style="color:var(--ms)">Morgan Stanley</div>
+      <div class="role">WHERE money goes next</div>
+      <div class="items">Training vs inference load profiles &middot; ESS 321 GWh (bull: 590) &middot; Sector rotation map &middot; 9-18 GW US shortfall (Exhibit 12) &middot; Na-ion cost RMB 0.32→0.21/Wh &middot; BTM ESS IRR 23%/36% &middot; System rebalancing to flexibility &middot; CATL, Tesla, LGES, Fluence, BYD</div>
+    </div>
+  </div>
+
+  <!-- DETAILED COMPARISON TABLE -->
+  <div class="card">
+    <h3>Detailed Headline Forecast Comparison</h3>
+    <div class="sub">All data points across five publications for line-by-line comparison</div>
+    <div class="table-responsive"><table>
+      <thead><tr>
+        <th>Metric</th><th style="color:var(--gs)">GS Apr'24</th><th style="color:var(--gsL)">GS Oct'25</th><th style="color:var(--gsF)">GS Feb'26</th><th style="color:var(--jpm)">JPM 1Q26</th><th style="color:var(--ms)">MS Mar'26</th><th style="color:var(--accent)">Signal</th>
+      </tr></thead>
+      <tbody>
+        <tr><td>DC Power Growth 2030 vs 2023</td><td style="color:var(--gs)">+160%</td><td style="color:var(--gsL)">+175%</td><td style="color:var(--gsF)">+220%</td><td style="color:var(--jpm)">+228%</td><td style="color:var(--ms)">320 GW</td><td style="color:var(--accent)"><span style="background:rgba(79,140,255,0.15);color:var(--accent);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700">CONVERGED</span></td></tr>
+        <tr><td>Global DC Demand 2030E (TWh)</td><td style="color:var(--gs)">~1,068</td><td style="color:var(--gsL)">1,131</td><td style="color:var(--gsF)">1,316</td><td style="color:var(--jpm)">~1,350</td><td style="color:var(--ms)">N/A</td><td style="color:var(--accent)"><span style="background:rgba(79,140,255,0.1);color:var(--accent);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600">~3% gap</span></td></tr>
+        <tr><td>US Power CAGR to 2030</td><td style="color:var(--gs)">2.4%</td><td style="color:var(--gsL)">2.6%</td><td style="color:var(--gsF)">3.2%</td><td style="color:var(--jpm)">~3.1%</td><td style="color:var(--ms)">3.8%</td><td style="color:var(--accent)"><span style="background:rgba(102,187,106,0.15);color:var(--ms);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600">MS highest</span></td></tr>
+        <tr><td>AI Share of DC 2030E</td><td style="color:var(--gs)">~20%</td><td style="color:var(--gsL)">~39%</td><td style="color:var(--gsF)">~50%</td><td style="color:var(--jpm)">~65%</td><td style="color:var(--ms)">45-50%</td><td style="color:var(--accent)"><span style="background:rgba(79,140,255,0.1);color:var(--accent);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600">GS+MS align</span></td></tr>
+        <tr><td>DC % of US Power 2030E</td><td style="color:var(--gs)">8%</td><td style="color:var(--gsL)">11%</td><td style="color:var(--gsF)">~14%</td><td style="color:var(--jpm)">13.5%</td><td style="color:var(--ms)">N/A</td><td style="color:var(--accent)"><span style="background:rgba(79,140,255,0.15);color:var(--accent);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700">CONVERGED</span></td></tr>
+        <tr><td>Hyperscaler CapEx+R&amp;D 2026E</td><td style="color:var(--gs)">N/A</td><td style="color:var(--gsL)">N/A</td><td style="color:var(--gsF)">&gt;$1T</td><td style="color:var(--jpm)">$664B+</td><td style="color:var(--ms)">N/A</td><td style="color:var(--accent)"><span style="background:rgba(255,152,0,0.15);color:var(--orange);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700">Unprecedented</span></td></tr>
+        <tr><td>US DC Demand 2025-28 (GW)</td><td style="color:var(--gs)">N/A</td><td style="color:var(--gsL)">N/A</td><td style="color:var(--gsF)">N/A</td><td style="color:var(--jpm)">N/A</td><td style="color:var(--ms)">74 GW</td><td style="color:var(--accent)"><span style="background:rgba(102,187,106,0.15);color:var(--ms);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600">MS unique</span></td></tr>
+        <tr><td>Net Shortfall 2025-28 (GW)</td><td style="color:var(--gs)">N/A</td><td style="color:var(--gsL)">N/A</td><td style="color:var(--gsF)">N/A</td><td style="color:var(--jpm)">N/A</td><td style="color:var(--ms)">9-18 GW</td><td style="color:var(--accent)"><span style="background:rgba(102,187,106,0.15);color:var(--ms);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600">MS unique</span></td></tr>
+        <tr><td>DC ESS Deploy 2030E (GWh)</td><td style="color:var(--gs)">N/A</td><td style="color:var(--gsL)">N/A</td><td style="color:var(--gsF)">N/A</td><td style="color:var(--jpm)">N/A</td><td style="color:var(--ms)">321 (bull:590)</td><td style="color:var(--accent)"><span style="background:rgba(102,187,106,0.15);color:var(--ms);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600">MS unique</span></td></tr>
+        <tr><td>BTM Solutions (GW)</td><td style="color:var(--gs)">N/A</td><td style="color:var(--gsL)">N/A</td><td style="color:var(--gsF)">14 GW</td><td style="color:var(--jpm)">N/A</td><td style="color:var(--ms)">BE 5-8 GW</td><td style="color:var(--accent)"><span style="background:rgba(79,140,255,0.1);color:var(--accent);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600">GS+MS</span></td></tr>
+        <tr><td>CO₂ Increase (mn tons)</td><td style="color:var(--gs)">215-220</td><td style="color:var(--gsL)">215-220</td><td style="color:var(--gsF)">285-290</td><td style="color:var(--jpm)">N/A</td><td style="color:var(--ms)">N/A</td><td style="color:var(--accent)"><span style="background:rgba(239,83,80,0.15);color:var(--red);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700">↑35%</span></td></tr>
+        <tr><td>Innovation Cycle / Next Rotation</td><td style="color:var(--gs)">N/A</td><td style="color:var(--gsL)">N/A</td><td style="color:var(--gsF)">Appraisal</td><td style="color:var(--jpm)">N/A</td><td style="color:var(--ms)">ESS next</td><td style="color:var(--accent)"><span style="background:rgba(171,71,188,0.15);color:var(--purple);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600">Complementary</span></td></tr>
+        <tr><td>Na-Ion Cost (RMB/Wh)</td><td style="color:var(--gs)">N/A</td><td style="color:var(--gsL)">N/A</td><td style="color:var(--gsF)">N/A</td><td style="color:var(--jpm)">N/A</td><td style="color:var(--ms)">0.32→0.21</td><td style="color:var(--accent)"><span style="background:rgba(102,187,106,0.15);color:var(--ms);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600">MS unique</span></td></tr>
+        <tr><td>Reinvestment Rate 2026E</td><td style="color:var(--gs)">N/A</td><td style="color:var(--gsL)">N/A</td><td style="color:var(--gsF)">87%</td><td style="color:var(--jpm)">N/A</td><td style="color:var(--ms)">N/A</td><td style="color:var(--accent)"><span style="background:rgba(245,166,35,0.15);color:var(--gs);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600">GS warning</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ DEMAND ═══════════════════════ -->
+<div id="tab-demand" class="tab-content">
+  <div class="grid-32">
+    <div class="card">
+      <h3>Global DC Power Demand Trajectory (TWh)</h3>
+      <div class="sub">GS revised 3x: +160% → +175% → +220%. Now within 3% of JPM's +228%. Equivalent to adding a Top 10 power consuming country.</div>
+      <div class="chart-wrap"><canvas id="chart-demand"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Forecast Evolution: 23 Months of Upward Revisions</h3>
+      <div class="timeline-wrap"><div class="timeline-item tl-gs"><div class="timeline-head"><span class="date" style="color:var(--gs)">Apr 2024 (GS)</span><span class="growth">+160%</span><span class="twh">(1,068 TWh)</span></div><div class="timeline-body">Initial framework. Introduced Jevons Paradox / 3-constraint model (budget, demand, no constraint). AI = ~20% of DC. ChatGPT = 6-10x power per query vs Google search. 32 Buy-rated stocks.</div></div>
+      <div class="timeline-item tl-gsL"><div class="timeline-head"><span class="date" style="color:var(--gsL)">Oct 2025 (GS)</span><span class="growth">+175%</span><span class="twh">(1,131 TWh)</span></div><div class="timeline-body">AI share doubled to 39%. Introduced 6P constraint framework. Added labour analysis (78K T&amp;D gap). $790B grid capex. Green Reliability Premium $40/MWh. 82 GW capacity needed.</div></div>
+      <div class="timeline-item tl-gsF"><div class="timeline-head"><span class="date" style="color:var(--gsF)">Feb 2026 (GS)</span><span class="growth">+220%</span><span class="twh">(1,316 TWh)</span></div><div class="timeline-body">Major revision. &gt;$300B hyperscaler capex upward revision. 87% reinvestment rate. Vera Rubin integrated. 105 GW (incl 14 GW BTM). CO₂ up to 285-290 mn tons. US CAGR 3.2%. AI Innovation Cycle in Appraisal phase.</div></div>
+      <div class="timeline-item tl-jpm"><div class="timeline-head"><span class="date" style="color:var(--jpm)">1Q 2026 (JPM)</span><span class="growth">+228%</span><span class="twh">(~1,350 TWh)</span></div><div class="timeline-body">Independent validation. US DC: 168→620 TWh. AI = 65% of DC capacity. Hyperscaler capex $664B+. Binding constraint: baseload mismatch and interconnection queue. 222 GW total US additions.</div></div>
+      <div class="timeline-item tl-ms"><div class="timeline-head"><span class="date" style="color:var(--ms)">Mar 2026 (MS)</span><span class="growth">320 GW</span></div><div class="timeline-body">New dimension: inference flexibility. ESS as next rotation. 74 GW US demand with 9-18 GW shortfall. DC ESS: 321 GWh by 2030. Sodium-ion cost disruption. BTM ESS IRR 23%/36%.</div></div></div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>AI Share of DC Power (%) — All Houses</h3>
+      <div class="sub">JPM most bullish at 65%. GS Feb'26 + MS converge at ~50%. Gap narrowed from 1.7x to 1.3x.</div>
+      <div class="chart-wrap-sm"><canvas id="chart-ai-share"></canvas></div>
+      <div class="narrative">The AI share divergence is the single biggest remaining disagreement across houses. JPM at 65% implies much faster inference scaling and broader AI adoption. MS aligns with GS at 45-50%, framing inference as the dominant workload driver by 2030.</div>
+    </div>
+    <div class="card">
+      <h3>US Power Demand CAGR — Five Estimates</h3>
+      <div class="sub">Levels not seen since the 1990s. MS highest at 3.8% (incl non-DC drivers).</div>
+      <div class="chart-wrap-sm"><canvas id="chart-cagr"></canvas></div>
+      <div class="narrative">GS Feb'26 breakdown of 3.2% CAGR: Front-of-meter DC = 1.5pp, BTM DC = 0.5pp, residential = 0.6pp, commercial (ex-DC) = 0.4pp, industrial = 0.5pp, transport = 0.2pp, other = -0.4pp. Data centres alone contribute 2.0pp.</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>GS: Hyperscaler Investment Surge</h3>
+      <div class="sub">CapEx + R&amp;D exceeds $1T in 2026E. Reinvestment rate 87% of OCF.</div>
+      <div class="table-responsive"><table>
+        <thead><tr><th>Metric</th><th>Prior Est.</th><th>Feb'26 Rev.</th><th>Change</th></tr></thead>
+        <tbody>
+          <tr><td>2026-27 CapEx+R&amp;D</td><td>~$700B</td><td style="color:var(--text)">&gt;$1,000B</td><td style="color:var(--green);font-weight:700">+$300B</td></tr>
+          <tr><td>Reinvestment Rate '26</td><td>79%</td><td>87%</td><td style="color:var(--green);font-weight:700">+8pp</td></tr>
+          <tr><td>Net Debt/EBITDA</td><td>~0.3x</td><td>~0.3x</td><td style="color:var(--muted)">Stable</td></tr>
+          <tr><td>CROCI 2027E</td><td>~31%</td><td>28.7%</td><td style="color:var(--orange);font-weight:700">-2.3pp ⚠</td></tr>
+          <tr><td>Hyperscaler EBITDA '27E</td><td>$972B</td><td>$1,079B</td><td style="color:var(--green);font-weight:700">+$107B</td></tr>
+        </tbody>
+      </table></div>
+      <div class="narrative">Over the last two months, GS analyst forecasts for 2026-27 hyperscaler CapEx + R&amp;D rose by over $300 billion. Balance sheets remain healthy at 0.3x ND/EBITDA. However, CROCI declining from 31% toward the 24% historical low-end is an early warning signal for AI Innovation Cycle phase transition.</div>
+    </div>
+    <div class="card">
+      <h3>GS: AI Innovation Cycle — Shale Analogy</h3>
+      <div class="sub">Currently in Appraisal / Hopes &amp; Dreams Phase — best window for infrastructure equities</div>
+      <div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;font-weight:700">Exploration</span><span class="tag" style="background:var(--dim);color:#888">Complete</span></div><div style="font-size:13px;color:var(--muted);line-height:1.6;margin-top:4px">Public/private companies pursue unlocking new opportunities. Higher risk. (GPU development, early LLM research)</div></div>
+      <div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;font-weight:700">Appraisal / Hopes &amp; Dreams</span><span class="tag tag-green">CURRENT ← We are here</span></div><div style="font-size:13px;color:var(--muted);line-height:1.6;margin-top:4px">Street most bullish. Multiple expansion for infrastructure. Thematic investment dominates stock-picking. Power supply chain +196pp since 2025.</div></div>
+      <div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;font-weight:700">Execution / Efficiency</span><span class="tag tag-orange">Approaching — monitor signals</span></div><div style="font-size:13px;color:var(--muted);line-height:1.6;margin-top:4px">Stock-picking replaces thematic buying. Focus shifts to corporate returns, balance sheets, market share. Multiples compress for laggards.</div></div>
+      <div style="padding:10px 0"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;font-weight:700">Technology Extension / Legacy</span><span class="tag" style="background:var(--dim);color:#888">Future</span></div><div style="font-size:13px;color:var(--muted);line-height:1.6;margin-top:4px">Potential second leg via optimisation or wider applications. Mature technologies.</div></div>
+      <div class="callout callout-orange"><h4 style="color:var(--orange)">Three Phase Transition Signals:</h4><div style="font-size:13px;color:var(--muted);line-height:1.7">1. Financial inflexibility — reinvestment rate at 87%, but balance sheets healthy (0.3x). <b style="color:var(--green)">NOT triggered.</b><br>2. Corporate return erosion — CROCI declining from 31% toward 24% low. <b style="color:var(--orange)">DETERIORATING.</b><br>3. Product oversupply — compute/token demand still voracious. <b style="color:var(--green)">NOT triggered.</b></div></div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>MS: Training vs Inference Load Profiles</h3>
+      <div class="sub">Core MS insight: as inference share rises, power demand characteristics fundamentally change</div>
+      <div class="compare-split">
+        <div class="compare-col" style="background:rgba(26,35,126,0.08);border:1px solid rgba(26,35,126,0.2)">
+          <h4 style="color:#7986cb">Training</h4>
+          <div class="item">Hyperscalers, academia, startups</div><div class="item">Months-long continuous GPU runs</div><div class="item">Stable, predictable load curve</div><div class="item">Location-flexible (remote OK)</div><div class="item">Baseload power sufficient</div><div class="item">Workload: batch processing</div><div class="item" style="font-weight:700;color:var(--text)">Power demand: STABLE &amp; PLANNABLE</div>
+        </div>
+        <div class="compare-col" style="background:rgba(27,94,32,0.08);border:1px solid rgba(102,187,106,0.2)">
+          <h4 style="color:var(--ms)">Inference</h4>
+          <div class="item">Software, auto-drive, search, ads</div><div class="item">Real-time user-triggered requests</div><div class="item">Spiky loads with sudden large ramps</div><div class="item">Latency-sensitive → must be urban</div><div class="item">Millisecond-response flexibility needed</div><div class="item">Workload: streaming + real-time</div><div class="item" style="font-weight:700;color:var(--text)">Power demand: VOLATILE &amp; SPIKY</div>
+        </div>
+      </div>
+      <div class="callout callout-ms" style="margin-top:12px;text-align:center"><div style="font-size:14px;font-weight:600;color:var(--ms)">Inference rising to 45-50% of DC load by 2030 means power systems must shift from "can we supply enough" → "can we supply flexibly enough"</div></div>
+    </div>
+    <div class="card">
+      <h3>GS: Jevons Paradox &amp; Emissions Impact</h3>
+      <div class="sub">Budget constraint operating — efficiency gains absorbed by rising demand</div>
+      <div class="callout callout-accent">
+        <h4 style="color:var(--accent)">Jevons Paradox: Three Scenarios</h4>
+        <div style="padding:6px 0;border-bottom:1px solid var(--border)"><div style="font-size:13px;font-weight:700;color:var(--green)">Budget Constrained ← CURRENT</div><div style="font-size:12px;color:var(--muted);line-height:1.5">Same budget, 2x compute speed, 1/5 servers. Max power +20%. Efficiency gains drive increased demand at same spend.</div></div>
+        <div style="padding:6px 0;border-bottom:1px solid var(--border)"><div style="font-size:13px;font-weight:700;color:var(--orange)">Demand Constrained</div><div style="font-size:12px;color:var(--muted);line-height:1.5">AI solutions well-defined. Efficiency → 1/10 servers, -50% money, -40% power. Would signal Execution Phase.</div></div>
+        <div style="padding:6px 0"><div style="font-size:13px;font-weight:700;color:var(--red)">No Constraint</div><div style="font-size:12px;color:var(--muted);line-height:1.5">Same servers, 4x budget, 9x compute, 5x power. Pure scale-up. Unlikely but highest demand scenario.</div></div>
+      </div>
+      <div class="callout callout-red" style="margin-top:12px">
+        <h4 style="color:var(--red)">Emissions Impact (GS Feb'26)</h4>
+        <div style="font-size:13px;color:var(--muted);line-height:1.7">DC CO₂ emissions revised to 285-290 million tons (2030 vs 2023), up 35% from 215-220 mn. Driven by higher demand + BTM simple-cycle nat gas + softer renewables PPAs. Social cost PV: $145-170 billion at $190/ton. Partially offset by AI drug discovery value ($83-412B).</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>US Data Centre Capacity Build-Out</h3>
+      <div class="sub">GS: US DC capacity 32 GW (2025) → 95 GW (2030). RoW: 42 GW → 72 GW.</div>
+      <div class="table-responsive"><table>
+        <thead><tr><th>Metric</th><th>2023</th><th>2025E</th><th>2027E</th><th>2030E</th><th style="color:var(--green)">CAGR</th></tr></thead>
+        <tbody>
+          <tr><td>Global DC Power (TWh)</td><td>411</td><td>607</td><td>870</td><td>1,316</td><td style="color:var(--green)">+26%</td></tr>
+          <tr><td>US DC Power (TWh)</td><td>~165</td><td>~305</td><td>~520</td><td>~790</td><td style="color:var(--green)">+25%</td></tr>
+          <tr><td>US DC Capacity (GW)</td><td>~25</td><td>32</td><td>55</td><td>95</td><td style="color:var(--green)">+21%</td></tr>
+          <tr><td>RoW DC Capacity (GW)</td><td>~30</td><td>42</td><td>55</td><td>72</td><td style="color:var(--green)">+13%</td></tr>
+          <tr><td>DC as % of US Power</td><td>~4%</td><td>~5.5%</td><td>~9%</td><td>~14%</td><td>—</td></tr>
+        </tbody>
+      </table></div>
+      <div class="narrative">Of the 905 TWh growth by 2030, GS sees ~60% in the US (up from ~50% previously). Hyperscale + cloud workloads growing at 14% CAGR; AI workloads at 98% CAGR over 2023-26.</div>
+    </div>
+    <div class="card">
+      <h3>AI Drug Discovery Value (GS Healthcare)</h3>
+      <div class="sub">First quantification of AI's "Pervasiveness" benefit</div>
+      <div class="table-responsive"><table>
+        <thead><tr><th>Metric</th><th>Without AI</th><th>With AI</th><th style="color:var(--green)">Delta</th></tr></thead>
+        <tbody>
+          <tr><td>Drug discovery success rate</td><td>6.4%</td><td>10.3%</td><td style="color:var(--green);font-weight:700">+370 bps</td></tr>
+          <tr><td>Additional discoveries/yr</td><td>—</td><td>+28 drugs</td><td style="color:var(--green);font-weight:700">+28</td></tr>
+          <tr><td>Pre-clinical + testing time</td><td>13 years</td><td>~10 years</td><td style="color:var(--green);font-weight:700">-3 years</td></tr>
+        </tbody>
+      </table></div>
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-top:12px">10-Year Pipeline PV Uplift:</div>
+      <div class="kpi-row">
+        <div class="kpi"><div class="label">Discount Rate 21%</div><div class="val">$83B</div></div>
+        <div class="kpi"><div class="label">Discount Rate 12%</div><div class="val">$236B</div></div>
+        <div class="kpi"><div class="label">Discount Rate 8%</div><div class="val">$412B</div></div>
+      </div>
+      <div class="narrative">AI boosting drug discovery success rates by 370bps and cutting development timelines by 3 years. First concrete quantification answering "what are the goods AI is delivering?"</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ SUPPLY & GAPS ═══════════════════════ -->
+<div id="tab-supply" class="tab-content">
+  <div class="grid-2">
+    <div class="card">
+      <h3>MS: US DC Power Shortfall 2025-28 (Exhibit 12)</h3>
+      <div class="sub">Total demand 74 GW. After all solutions: 9-18 GW net shortfall remains.</div>
+      <div style="position:relative;height:420px;margin-bottom:8px"><canvas id="chart-shortfall"></canvas></div>
+      <div class="table-responsive"><table style="margin-top:8px">
+        <thead><tr><th>Solution</th><th>Low</th><th>Mid</th><th>High</th><th style="color:var(--green)">Probability</th></tr></thead>
+        <tbody>
+          <tr><td>Nat Gas Turbines</td><td>15 GW</td><td>18 GW</td><td>20 GW</td><td style="color:var(--green);font-weight:700">90%</td></tr>
+          <tr><td>Bloom Energy Fuel Cells</td><td>5 GW</td><td>7 GW</td><td>8 GW</td><td style="color:var(--green);font-weight:700">90%</td></tr>
+          <tr><td>Nuclear Co-location</td><td>5 GW</td><td>10 GW</td><td>15 GW</td><td style="color:var(--orange);font-weight:700">75%</td></tr>
+          <tr><td>Bitcoin Site Conversions</td><td>10 GW</td><td>13 GW</td><td>15 GW</td><td style="color:var(--green);font-weight:700">90%</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout callout-red" style="margin-top:10px">
+        <div style="display:flex;justify-content:space-between"><span style="font-size:14px;font-weight:700;color:var(--red)">Net Shortfall After All Solutions:</span><span style="font-size:14px;font-weight:700;color:var(--red)">9 GW (mid) to 18 GW (low)</span></div>
+        <div style="font-size:12px;color:var(--dim);margin-top:6px;font-style:italic">MS: "We believe the most likely outcome skews towards the low end of our range" — i.e. closer to 18 GW shortfall</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Three Bottleneck Layers (Cross-House Framework)</h3>
+      <div class="sub">Disaggregated supply constraint analysis from our research</div>
+      <div class="bottleneck"><div class="head"><h4>1. Raw Generation Capacity</h4><span class="tag tag-green">OVERSTATED as constraint</span></div><div class="body">JPM: 222 GW gross US additions 2026-28 (net 188 GW after 34 GW retirements). GS Feb'26: 105 GW DC-specific capacity including 14 GW BTM. Green Reliability Premium $40/MWh = only 3.4% of hyperscaler 2027E EBITDA ($1,079B). Hyperscalers will pay — this is solvable with capital and time.</div><div class="src">Sources: GS + JPM</div></div>
+      <div class="bottleneck"><div class="head"><h4>2. Grid Interconnection &amp; T&amp;D Labour</h4><span class="tag tag-red">UNDERSTATED — true binding constraint</span></div><div class="body">GS: 78,000 skilled T&amp;D worker gap requiring 3-4 year apprenticeship training. Current: ~45K apprentices/yr, need ~65K from 2027. JPM: &gt;2,600 GW in interconnection queue, 5+ year wait. Transmission: 7-10 year lead time. Transformer lead times 128-144 weeks (2.8 years) at 4-6x cost. This is a human capital problem money cannot solve quickly.</div><div class="src">Sources: GS + JPM + IOU Article</div></div>
+      <div class="bottleneck"><div class="head"><h4>3. Load Flexibility (Inference)</h4><span class="tag tag-ms">NEW DIMENSION — MS unique</span></div><div class="body">As inference rises to 45-50% of DC workload, power demand shifts from stable baseload (training) to volatile, spiky, unpredictable load curves. System needs millisecond-response peak shaving and frequency regulation. ESS provides this — not replacing generation, but complementing it. DC ESS deployment: 321 GWh by 2030 (bull case: 590 GWh).</div><div class="src">Sources: MS</div></div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3 style="color:var(--gs)">GS Feb'26: DC-Specific Capacity Additions (105 GW)</h3>
+      <div class="sub">Up from 82 GW (Oct'25) and 72 GW (Apr'24). Includes 14 GW BTM (new).</div>
+      <div class="chart-wrap-sm"><canvas id="chart-gs-capacity"></canvas></div>
+      <div class="narrative">Gas dominates near/medium-term: peakers (40%) + CCGT (12%) = 52% gas total. BTM (13%) is entirely new in Feb'26 — reflects hyperscaler onsite simple-cycle nat gas to bypass 5+ year grid queues. US DC nat gas demand projected &gt;7 Bcf/d by 2030. Grid capex: &gt;$600B in 2026-2030.</div>
+    </div>
+    <div class="card">
+      <h3 style="color:var(--jpm)">JPM: Total US Grid Additions 2026-28 (222 GW gross)</h3>
+      <div class="sub">Different lens: entire US grid, not DC-specific. Net 188 GW after 34 GW retirements.</div>
+      <div class="chart-wrap-sm"><canvas id="chart-jpm-supply"></canvas></div>
+      <div class="narrative">Critical mismatch: 50% of additions are solar (111 GW) but at ~25% capacity factor = only ~244 TWh effective generation over 3 years vs nameplate of ~974 TWh. DCs need 24/7 baseload. Retirements: 34 GW (69% coal, 30% gas). Coal retirement removes reliable baseload while demand surges.</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>GS: Power Generation Timeline</h3>
+      <div class="gen-timeline"><div class="gen-head"><div class="dot" style="background:var(--green)"></div><span class="name" style="color:var(--green)">Renewables + BTM Gas</span><span class="online">Near Term</span></div><div class="gen-constraint">Key constraint: IRA safe harbour, land/supply</div><div class="gen-detail">Solar, battery storage, simple-cycle nat gas. BTM = 14 GW of onsite generation bypassing grid. Hyperscalers deploy in months vs years for grid connection.</div></div>
+      <div class="gen-timeline"><div class="gen-head"><div class="dot" style="background:var(--orange)"></div><span class="name" style="color:var(--orange)">Nat Gas CCGT</span><span class="online">2029</span></div><div class="gen-constraint">Key constraint: Turbine availability</div><div class="gen-detail">Combined cycle more efficient than peakers. GE Vernova, Siemens Energy key suppliers. Turbine lead times 3-4 years. &gt;7 Bcf/d US DC nat gas demand by 2030.</div></div>
+      <div class="gen-timeline"><div class="gen-head"><div class="dot" style="background:var(--purple)"></div><span class="name" style="color:var(--purple)">Nuclear</span><span class="online">2030-35+</span></div><div class="gen-constraint">Key constraint: Permitting, build, uranium</div><div class="gen-detail">Large-scale + SMR. Meta signed 2,600 MW with Vistra (20yr PPA). 50 GW nuclear needed to fully offset DC emissions. Capacity factor 90%+ vs solar 25%.</div></div>
+    </div>
+    <div class="card">
+      <h3>NVIDIA Server Evolution — Power vs Compute</h3>
+      <div class="sub">Efficiency +650% over 4 gens, but absolute power per server +269%</div>
+      <div class="chart-wrap-sm"><canvas id="chart-server"></canvas></div>
+      <div class="table-responsive"><table style="margin-top:8px">
+        <thead><tr><th>Generation</th><th>Max Power</th><th>Compute</th><th>Intensity (kW/pF)</th><th style="color:var(--green)">vs A100</th></tr></thead>
+        <tbody>
+          <tr><td>DGX A100</td><td style="color:var(--red)">6.5 kW</td><td style="color:var(--accent)">5 pF</td><td>1.30</td><td>Baseline</td></tr>
+          <tr><td>DGX H100</td><td style="color:var(--red)">10.2 kW</td><td style="color:var(--accent)">32 pF</td><td>0.32</td><td style="color:var(--green);font-weight:700">-75%</td></tr>
+          <tr><td>DGX B200</td><td style="color:var(--red)">14.3 kW</td><td style="color:var(--accent)">72 pF</td><td>0.20</td><td style="color:var(--green);font-weight:700">-85%</td></tr>
+          <tr><td>NVL8 (Rubin)</td><td style="color:var(--red)">24 kW</td><td style="color:var(--accent)">140 pF</td><td>0.17</td><td style="color:var(--green);font-weight:700">-87%</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- 6P Framework -->
+  <div class="card full">
+    <h3>GS 6P Constraint Framework (Feb'26) + Cross-House Overlay</h3>
+    <div class="sub" style="margin-bottom:14px">Six constraints governing the pace and shape of AI data centre power buildout</div>
+    <div class="sixp-grid">
+      <div class="sixp-card" style="background:rgba(255,152,0,0.05);border:1px solid rgba(255,152,0,0.15)"><div class="head"><h4>Pervasiveness</h4><span class="tag tag-orange">Medium</span></div><div class="gs-text"><b>GS:</b> Inference power intensity rising. AI drug discovery success rates +370bps (6.4%→10.3%). Still in Appraisal phase — not yet demand-constrained.</div><div class="ms-text"><b>MS:</b> Inference reaches 45-50% of DC load by 2030. Drives fundamental shift from capacity to flexibility requirements.</div></div>
+      <div class="sixp-card" style="background:rgba(255,152,0,0.05);border:1px solid rgba(255,152,0,0.15)"><div class="head"><h4>Productivity</h4><span class="tag tag-orange">Medium</span></div><div class="gs-text"><b>GS:</b> Vera Rubin NVL8: 0.17 kW/pFLOPS (vs A100: 1.30). +650% efficiency over 4 gens. But max power per server +269%. Pent-up demand absorbs gains.</div><div class="ms-text"><b>MS:</b> Efficiency gains per unit confirmed, but offset by higher absolute power per inference server. Jevons Paradox operating.</div></div>
+      <div class="sixp-card" style="background:rgba(239,83,80,0.05);border:1px solid rgba(239,83,80,0.15)"><div class="head"><h4>Parts</h4><span class="tag tag-red">High</span></div><div class="gs-text"><b>GS:</b> 105 GW total (incl 14 BTM). Nat gas &gt;7 Bcf/d by 2030. Turbine availability key constraint for CCGT.</div><div class="ms-text"><b>MS:</b> Bloom Energy fuel cells: 5-8 GW at 90% probability. Transformer lead times 128-144 weeks at 4-6x cost. Brownfield sites with grid connections = premium assets.</div></div>
+      <div class="sixp-card" style="background:rgba(239,83,80,0.05);border:1px solid rgba(239,83,80,0.15)"><div class="head"><h4>People</h4><span class="tag tag-red">Critical</span></div><div class="gs-text"><b>GS:</b> 78,000 T&amp;D skilled labour gap. 3-4 year apprenticeship training. Current: ~45K/yr, need ~65K from 2027. Wage inflation may help supply.</div><div class="ms-text"><b>MS:</b> Confirms labour as most severe bottleneck. Drives accelerated BTM adoption (less T&amp;D workers needed). Grid automation and contractor premium persist.</div></div>
+      <div class="sixp-card" style="background:rgba(76,175,80,0.05);border:1px solid rgba(76,175,80,0.15)"><div class="head"><h4>Price</h4><span class="tag tag-green">Low</span></div><div class="gs-text"><b>GS:</b> Green Reliability Premium $40/MWh = 3.4% of hyperscaler 2027E EBITDA ($1,079B). CROCI impact: -0.8pp. Not a meaningful constraint.</div><div class="ms-text"><b>MS:</b> Solar+ESS LCOE $74-100/MWh approaching CCGT $67/MWh. Na-ion at RMB 0.21/Wh further reduces ESS costs. BTM ESS: 23% unlevered IRR.</div></div>
+      <div class="sixp-card" style="background:rgba(255,152,0,0.05);border:1px solid rgba(255,152,0,0.15)"><div class="head"><h4>Policy</h4><span class="tag tag-orange">High ↑</span></div><div class="gs-text"><b>GS:</b> Rising public concerns about DC impact on electricity affordability. Push for ring-fencing costs. IRA sunset modest near-term impact.</div><div class="ms-text"><b>MS:</b> White House Ratepayer Protection Pledge (Mar'26) = BYOP era. PJM BTM rules may increase co-located DC fees. Texas SB-6 'kill switch' bill.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ ESS / FLEXIBILITY ═══════════════════════ -->
+<div id="tab-ess" class="tab-content">
+  <div class="grid-2">
+    <div class="card">
+      <h3>MS: Global DC ESS Deployment Forecast (GWh/yr)</h3>
+      <div class="sub">From ~15 GWh (2025) to 321 GWh (2030). Bull case: 590 GWh. US = 53% share. DC ESS CAGR ~85% vs utility-scale ~45%.</div>
+      <div class="chart-wrap"><canvas id="chart-ess"></canvas></div>
+      <div class="narrative">DC-specific ESS is a fraction of total utility-scale ESS (total market reaching 1,200+ GWh by 2030 per Rystad). But growth rate is faster because inference volatility requires onsite ms-response capability that utility-scale grid storage cannot provide due to transmission latency.</div>
+    </div>
+    <div class="card">
+      <h3>MS: Power System Rebalancing (Exhibit 19)</h3>
+      <div class="sub">Traditional generation's share declining as ESS/flexibility rises to ~22% by 2030. Structural shift.</div>
+      <div class="chart-wrap"><canvas id="chart-rebalance"></canvas></div>
+      <div class="narrative">MS frames this not as ESS replacing generation, but as the marginal investment dollar shifting toward flexibility. Traditional baseload remains essential (gas CCGT, nuclear), but "demand shorts" — the gap between what generation provides and what inference loads need in real-time — are absorbed via ESS. By 2030, ~22% of system contribution from flexibility/storage.</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>MS: Sector Rotation Sequence (Exhibit 4)</h3>
+      <div class="sub">AI Power basket accreted &gt;$1.5T market value since Jan 2023. Capital rotated sequentially. ESS is next.</div>
+      <div class="rotation-bar">
+        <div class="rot-col"><div class="period">2023-24</div><div class="bar" style="height:170px;background:#1565c0">4.8x</div><div class="label">Nuclear</div></div>
+        <div class="rot-col"><div class="period">2024-25</div><div class="bar" style="height:114px;background:#ef6c00">3.2x</div><div class="label">Gas Gen</div></div>
+        <div class="rot-col"><div class="period">2025</div><div class="bar" style="height:75px;background:#7b1fa2">2.1x</div><div class="label">Backup</div></div>
+        <div class="rot-col"><div class="period">2025-26</div><div class="bar" style="height:160px;background:#c62828">4.5x</div><div class="label">Fuel Cell</div></div>
+        <div class="rot-col"><div class="period">Ongoing</div><div class="bar" style="height:64px;background:#78909c">1.8x</div><div class="label">Grid</div></div>
+        <div class="rot-col"><div class="period" style="font-weight:700;color:var(--ms)">NEXT</div><div class="bar" style="height:30px;background:repeating-linear-gradient(45deg,rgba(102,187,106,0.4),rgba(102,187,106,0.4) 4px,transparent 4px,transparent 8px);border:2px dashed var(--ms);color:var(--ms)">★</div><div class="label" style="color:var(--ms);font-weight:700">ESS</div></div>
+      </div>
+      <div class="narrative">Each rotation wave lasted 6-12 months before the next segment takes leadership. Nuclear peaked in 2024 (Constellation, Cameco). Gas generators peaked 2024-25 (GE Vernova +196pp). Fuel cells are the current wave (Bloom Energy 10x in 12 months). MS identifies ESS as the next wave — the question is timing, not direction.</div>
+    </div>
+    <div class="card">
+      <h3>ESS Use Cases for AI Data Centres</h3>
+      <div class="sub">ESS in DCs is not about providing baseload — it's about managing what baseload cannot handle</div>
+      <div class="ess-usecase"><h4 style="color:var(--accent)">Peak Shaving</h4><p>Absorb sudden inference load spikes (100s of MW in seconds) that would otherwise trigger demand charges or destabilise local grid. Saves $2-5/MWh in demand charge avoidance.</p></div>
+      <div class="ess-usecase"><h4 style="color:var(--ms)">Frequency Regulation</h4><p>AI GPU loads create high-frequency power quality noise. BESS provides millisecond-level voltage and frequency stabilisation, preventing damage to $2M+ per rack GPU hardware.</p></div>
+      <div class="ess-usecase"><h4 style="color:var(--green)">Time-Shifting / Arbitrage</h4><p>Charge during low-cost overnight hours, discharge during peak windows. BTM ESS unlevered IRR 23%, levered 36% — purely from peak/off-peak price differential. Self-funding economics.</p></div>
+      <div class="ess-usecase"><h4 style="color:var(--orange)">Backup / UPS Replacement</h4><p>Replace diesel UPS with battery. Faster response (&lt;10ms vs &gt;10s for diesel), lower emissions, lower maintenance. Critical for 99.999% uptime requirement.</p></div>
+      <div class="ess-usecase"><h4 style="color:var(--purple)">Renewable Integration</h4><p>Buffer intermittent solar/wind to provide firm power. Addresses fundamental mismatch: 50% of new US generation is solar at 25% capacity factor, but DCs need 24/7 supply.</p></div>
+      <div class="ess-usecase"><h4 style="color:var(--gsF)">Grid Deferral</h4><p>ESS defers ~10% of infrastructure capex. Net deferral value ~$1.15M per $10M investment delayed 5 years. Reduces upfront grid upgrade burden for both utilities and hyperscalers.</p></div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>MS: ESS Levelised Cost of Energy (LCOE)</h3>
+      <div class="sub">Solar+ESS approaching CCGT parity in US. Already cheaper than coal in China.</div>
+      <div class="table-responsive"><table>
+        <thead><tr><th>Configuration</th><th>2025</th><th>2027E</th><th>2030E</th><th>Benchmark</th><th style="color:var(--green)">Status</th></tr></thead>
+        <tbody>
+          <tr><td>US Solar+ESS (20%,3H)</td><td>$90</td><td>$82</td><td>$74</td><td>CCGT $67</td><td style="color:var(--orange);font-weight:700">Approaching</td></tr>
+          <tr><td>US Solar+ESS (35%,4H)</td><td>$95</td><td>$87</td><td>$78</td><td>CCGT $67</td><td style="color:var(--orange)">Converging</td></tr>
+          <tr><td>US Standalone ESS (20%,3H)</td><td>$140</td><td>$120</td><td>$100</td><td>Peaker $93</td><td style="color:var(--orange)">2030 parity</td></tr>
+          <tr><td>China Solar+ESS</td><td>$48</td><td>$46</td><td>$44</td><td>Coal $50</td><td style="color:var(--green);font-weight:700">Already cheaper</td></tr>
+          <tr><td>China Standalone ESS</td><td>$65</td><td>$55</td><td>$45</td><td>Gas $70</td><td style="color:var(--green);font-weight:700">Already cheaper</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout callout-ms" style="margin-top:12px">
+        <h4 style="color:var(--ms)">BTM ESS Returns (DC-specific, peak/off-peak arbitrage only)</h4>
+        <div class="kpi-row">
+          <div class="kpi" style="background:rgba(102,187,106,0.1)"><div class="label">US Unlevered IRR</div><div class="val" style="color:var(--ms)">23%</div></div>
+          <div class="kpi" style="background:rgba(102,187,106,0.1)"><div class="label">US Levered (50%) IRR</div><div class="val" style="color:var(--ms)">36%</div></div>
+          <div class="kpi" style="background:rgba(102,187,106,0.1)"><div class="label">China Unlevered IRR</div><div class="val" style="color:var(--ms)">13%</div></div>
+          <div class="kpi" style="background:rgba(102,187,106,0.1)"><div class="label">China Levered IRR</div><div class="val" style="color:var(--ms)">22%</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Sodium-Ion: The Next Cost Curve Disruption</h3>
+      <div class="sub">CATL commercialised. At 100 GWh scale: &gt;30% cheaper than LFP. Changes ESS economics.</div>
+      <div class="table-responsive"><table>
+        <thead><tr><th>Parameter</th><th>LFP (Baseline)</th><th>Na-Ion Current</th><th>Na-Ion at Scale</th><th style="color:var(--green)">Advantage</th></tr></thead>
+        <tbody>
+          <tr><td>Cell cost (RMB/Wh)</td><td>0.35-0.40</td><td>0.32</td><td>0.21</td><td style="color:var(--green);font-weight:700">-34% vs current</td></tr>
+          <tr><td>Energy density (Wh/kg)</td><td>160-180</td><td>160</td><td>180</td><td style="color:var(--green)">Approaching LFP</td></tr>
+          <tr><td>Low-temp performance</td><td>Degraded</td><td>Superior</td><td>Superior</td><td style="color:var(--green)">Cold climate key</td></tr>
+          <tr><td>Cycle life / decay</td><td>Good</td><td>Slower</td><td>Slower</td><td style="color:var(--green)">Lower replace cost</td></tr>
+          <tr><td>Low SOC full power</td><td>No</td><td>Yes</td><td>Yes</td><td style="color:var(--green)">Better grid response</td></tr>
+          <tr><td>Key material</td><td>Lithium</td><td>Sodium</td><td>Sodium</td><td style="color:var(--green)">No supply constraint</td></tr>
+        </tbody>
+      </table></div>
+      <div class="narrative">At RMB 0.21/Wh (from 0.32), sodium-ion undercuts LFP by 30%+ at 100 GWh scale. CATL already in commercial production. Key DC advantages: better low-temperature charging, slower degradation, full power at low SOC. Combined with ESS LCOE approaching gas parity, Na-ion could accelerate crossover by 1-2 years.</div>
+      <div class="callout callout-ms" style="margin-top:10px"><div style="font-size:14px;font-weight:700;color:var(--ms)">MS High-Conviction ESS Beneficiaries: CATL &middot; Tesla &middot; LGES &middot; Fluence &middot; BYD</div></div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>MS: ESS Drives Lithium Demand</h3>
+      <div class="sub">New ESS installations could push lithium market into deficit — unless Na-ion scales faster</div>
+      <div class="table-responsive"><table>
+        <thead><tr><th>Year</th><th>ESS Install (GWh)</th><th>ESS Shipments</th><th>Li Demand (kt LCE)</th><th>Bull Case Li</th></tr></thead>
+        <tbody>
+          <tr><td>2024</td><td>~200</td><td>~300</td><td>~200</td><td>~200</td></tr>
+          <tr><td>2026E</td><td>~500</td><td>~550</td><td>~380</td><td>~420</td></tr>
+          <tr><td>2028E</td><td>~950</td><td>~1,100</td><td>~700</td><td>~850</td></tr>
+          <tr><td>2030E</td><td>~1,800</td><td>~2,200</td><td>~1,100</td><td>~1,400</td></tr>
+        </tbody>
+      </table></div>
+      <div class="narrative">If ESS shipments follow the bull case curve, lithium demand from ESS alone reaches 1,400 kt LCE by 2030 — potentially pushing the market into deficit, depending on supply response and sodium-ion substitution pace.</div>
+    </div>
+    <div class="card">
+      <h3>ESS Investment Vehicles — Tiered Risk/Reward</h3>
+      <div class="sub">Three tiers from lowest to highest risk</div>
+      <div class="tier"><h4 style="color:var(--green)">Tier 1: Scaled Platforms (Lowest Risk)</h4><div class="names">Tesla (TSLA) &middot; BYD &middot; CATL</div><div class="body">Megapack is the dominant utility-scale ESS platform. Tesla also has Autobidder AI software + UK Ofgem retail licence = full vertical integration. CATL is the Na-ion leader. These companies have proven manufacturing scale, positive margins, and diversified revenue. ESS = upside optionality.</div></div>
+      <div class="tier"><h4 style="color:var(--orange)">Tier 2: Pure-Play ESS (Medium Risk)</h4><div class="names">Fluence (FLNC) &middot; LGES</div><div class="body">Fluence: GS Buy-rated, MS high-conviction. Leading software-defined ESS platform. But dropped 55% ($33→$15) in one month. LGES: Korean battery giant with strong ESS credentials but less direct DC exposure.</div></div>
+      <div class="tier"><h4 style="color:var(--red)">Tier 3: Emerging / Pre-Profit (Highest Risk)</h4><div class="names">EOSE &middot; FCEL &middot; Plug Power</div><div class="body">EOSE: zinc-based ESS with interesting chemistry but -126% gross margin, $969.6M net loss, securities investigations. Technology thesis is right but unit economics unproven at scale.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  GS SUSTAIN (Apr'24, Oct'25, Feb'26) &middot; GS Briefings &middot; JPM AM Guide to Alternatives 1Q26 &middot; MS "Flexible Power" Mar'26 &middot; Cross-house analysis &middot; Not investment advice
+</div>
+
+
+<script>
+// Password: acuity2026
+var HASH='23008133';
+var lockPw=document.getElementById('lock-pw');
+var lockMsg=document.getElementById('lock-msg');
+
+function checkPw(){
+  var v=lockPw.value.trim().toLowerCase();
+  if(v===HASH){
+    document.getElementById('lock-screen').classList.add('unlocked');
+    setTimeout(function(){
+      document.getElementById('lock-screen').style.display='none';
+      document.getElementById('main-content').classList.add('visible');
+    },600);
+  } else {
+    lockPw.classList.add('error');
+    lockMsg.textContent='Incorrect access code. Please try again.';
+    lockMsg.style.color='var(--red)';
+    setTimeout(function(){lockPw.classList.remove('error')},400);
+  }
+}
+lockPw.addEventListener('keydown',function(e){
+  if(e.key==='Enter')checkPw();
+  lockMsg.textContent='';
+});
+</script>
+
+<script>
+function showTab(id){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.target.classList.add('active');
+  // Init charts on first view
+  if(id==='demand'&&!window._demandInit){window._demandInit=true;initDemandCharts()}
+  if(id==='supply'&&!window._supplyInit){window._supplyInit=true;initSupplyCharts()}
+  if(id==='ess'&&!window._essInit){window._essInit=true;initESSCharts()}
+}
+const cDef={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a0b8',font:{size:12,family:'DM Sans'}}},tooltip:{backgroundColor:'#1a1d2a',titleColor:'#e4e6ed',bodyColor:'#94a0b8',borderColor:'#1a1d2a',borderWidth:1,bodyFont:{size:12},callbacks:{label:function(ctx){var lbl=ctx.dataset.label||'';if(lbl)lbl+=': ';var v=ctx.parsed.x!==undefined&&ctx.parsed.x!==null?ctx.parsed.x:ctx.parsed.y;if(v!==null&&v!==undefined)lbl+=new Intl.NumberFormat('en-US').format(v);return lbl}}}},scales:{x:{ticks:{color:'#6b7280',font:{size:12}},grid:{color:'#1a1d2a'}},y:{ticks:{color:'#6b7280',font:{size:12}},grid:{color:'#1a1d2a'}}}};
+
+function initDemandCharts(){
+  const yrs=['2023','2025E','2026E','2027E','2028E','2029E','2030E'];
+  new Chart(document.getElementById('chart-demand'),{type:'line',data:{labels:yrs,datasets:[
+    {label:"GS Apr'24",data:[411,530,600,690,790,920,1068],borderColor:'#f5a623',borderWidth:2,borderDash:[6,3],pointRadius:3,tension:0.3},
+    {label:"GS Oct'25",data:[411,550,640,750,870,1000,1131],borderColor:'#ffd078',borderWidth:2,borderDash:[4,2],pointRadius:3,tension:0.3},
+    {label:"GS Feb'26",data:[411,607,730,870,1020,1180,1316],borderColor:'#d35400',borderWidth:3,pointRadius:4,tension:0.3},
+    {label:"JPM 1Q26",data:[411,580,700,830,980,1140,1350],borderColor:'#4fc3f7',borderWidth:3,pointRadius:4,tension:0.3},
+  ]},options:{...cDef,scales:{...cDef.scales,y:{...cDef.scales.y,min:300,max:1500}}}});
+
+  new Chart(document.getElementById('chart-ai-share'),{type:'bar',data:{labels:['2025E','2027E','2030E'],datasets:[
+    {label:"GS Apr'24",data:[12,16,20],backgroundColor:'#f5a623'},
+    {label:"GS Feb'26",data:[25,40,50],backgroundColor:'#d35400'},
+    {label:"JPM",data:[34,47,65],backgroundColor:'#4fc3f7'},
+    {label:"MS",data:[20,35,50],backgroundColor:'#66bb6a'},
+  ]},options:{...cDef,scales:{...cDef.scales,y:{...cDef.scales.y,max:70,ticks:{...cDef.scales.y.ticks,callback:v=>v+'%'}}}}});
+
+  new Chart(document.getElementById('chart-cagr'),{type:'bar',data:{labels:["GS Apr'24","GS Oct'25","GS Feb'26","JPM 1Q26","MS Mar'26"],datasets:[{label:'CAGR %',data:[2.4,2.6,3.2,3.1,3.8],backgroundColor:['#f5a623','#ffd078','#d35400','#4fc3f7','#66bb6a']}]},options:{indexAxis:'y',...cDef,plugins:{...cDef.plugins,legend:{display:false}},scales:{...cDef.scales,x:{...cDef.scales.x,max:4.5,ticks:{...cDef.scales.x.ticks,callback:v=>v+'%'}}}}});
+}
+
+function initSupplyCharts(){
+  // Simple horizontal bar showing the full shortfall flow
+  new Chart(document.getElementById('chart-shortfall'),{type:'bar',data:{
+    labels:['Total DC Demand','Less: Under Construction','Less: Grid Access','= Power Gap','Sol 1: Gas Turbines','Sol 2: Bloom Fuel Cells','Sol 3: Nuclear Co-locate','Sol 4: Bitcoin Converts','Prob-Weighted Total','NET SHORTFALL'],
+    datasets:[{
+      label:'GW',
+      data:[74,10,15,49,18,7,10,13,40,9],
+      backgroundColor:['#4f8cff','#3a4a5c','#3a4a5c','#5b8cb8','#6a9fd4','#6a9fd4','#8bb8d9','#6a9fd4','#4f8cff','#ef5350'],
+      borderRadius:4,
+      borderSkipped:false
+    }]
+  },options:{
+    indexAxis:'y',responsive:true,maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:function(ctx){
+        var tips=['74 GW total US DC demand 2025-28','10 GW already under construction','15 GW with existing grid access','49 GW shortfall before new solutions','15-20 GW range, 90% probability','5-8 GW range, 90% probability','5-15 GW range, 75% probability','10-15 GW range, 90% probability','31-50 GW range, midpoint 40 GW','9 GW (mid) to 18 GW (low end)'];
+        return tips[ctx.dataIndex];
+      }}}
+    },
+    scales:{
+      x:{max:80,ticks:{color:'#9ca3af',font:{size:12},callback:function(v){return v+' GW'}},grid:{color:'#1a1d2a'}},
+      y:{ticks:{color:'#9ca3af',font:{size:11}},grid:{color:'#1a1d2a'}}
+    }
+  }});
+
+  new Chart(document.getElementById('chart-gs-capacity'),{type:'bar',data:{labels:['Nat Gas Peakers','Solar','Nat Gas CCGT','BTM (new)','Wind'],datasets:[{label:'GW',data:[42,28,12,14,9],backgroundColor:['#f5a623','#ff9800','#f5a623','#d35400','#4fc3f7']}]},options:{indexAxis:'y',...cDef,plugins:{...cDef.plugins,legend:{display:false}},scales:{...cDef.scales,x:{...cDef.scales.x,max:50,ticks:{...cDef.scales.x.ticks,callback:v=>v+' GW'}}}}});
+
+  new Chart(document.getElementById('chart-jpm-supply'),{type:'bar',data:{labels:['Solar','Natural Gas','Batteries','Wind','Other'],datasets:[{label:'GW',data:[111.1,60,26.7,22.2,2.2],backgroundColor:['#ff9800','#f5a623','#66bb6a','#4fc3f7','#555868']}]},options:{indexAxis:'y',...cDef,plugins:{...cDef.plugins,legend:{display:false}},scales:{...cDef.scales,x:{...cDef.scales.x,max:120,ticks:{...cDef.scales.x.ticks,callback:v=>v+' GW'}}}}});
+
+  new Chart(document.getElementById('chart-server'),{type:'bar',data:{labels:['DGX A100','DGX H100','DGX B200','NVL8 (Rubin)'],datasets:[
+    {label:'Max Power (kW)',data:[6.5,10.2,14.3,24],backgroundColor:'#ef5350',yAxisID:'y'},
+    {label:'Compute (pFLOPS)',data:[5,32,72,140],backgroundColor:'#4f8cff',yAxisID:'y1'},
+  ]},options:{...cDef,scales:{y:{position:'left',ticks:{color:'#6b7280',font:{size:12},callback:v=>v+' kW'},grid:{color:'#1a1d2a'}},y1:{position:'right',ticks:{color:'#6b7280',font:{size:12},callback:v=>v+' pF'},grid:{drawOnChartArea:false}},x:{ticks:{color:'#6b7280',font:{size:11}},grid:{color:'#1a1d2a'}}}}});
+}
+
+function initESSCharts(){
+  new Chart(document.getElementById('chart-ess'),{type:'bar',data:{labels:['2025','2026E','2027E','2028E','2029E','2030E'],datasets:[
+    {label:'US',data:[8,20,45,75,120,169],backgroundColor:'#2e7d32'},
+    {label:'China',data:[3,10,22,38,58,85],backgroundColor:'#c62828'},
+    {label:'EU',data:[2,5,12,20,30,38],backgroundColor:'#1565c0'},
+    {label:'Other',data:[2,5,11,17,27,29],backgroundColor:'#78909c'},
+  ]},options:{...cDef,scales:{...cDef.scales,x:{...cDef.scales.x,stacked:true},y:{...cDef.scales.y,stacked:true}}}});
+
+  new Chart(document.getElementById('chart-rebalance'),{type:'line',data:{labels:['2018','2020','2022','2024','2026E','2028E','2030E'],datasets:[
+    {label:'Traditional Gen',data:[100,98,96,93,88,83,78],backgroundColor:'rgba(55,71,79,0.5)',borderColor:'#546e7a',fill:true,tension:0.3},
+    {label:'ESS / Flexibility',data:[0,2,4,7,12,17,22],backgroundColor:'rgba(102,187,106,0.5)',borderColor:'#43a047',fill:true,tension:0.3},
+  ]},options:{...cDef,scales:{...cDef.scales,y:{...cDef.scales.y,max:105,stacked:true,ticks:{...cDef.scales.y.ticks,callback:v=>v+'%'}}}}});
+}
+</script>
+</div><!-- end main-content -->
+</body>
+</html>
